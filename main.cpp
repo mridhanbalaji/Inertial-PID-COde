@@ -1,80 +1,135 @@
-#include "main.h"
-#include "okapi/api.hpp"
-pros::Controller Controller1 = pros::Controller(CONTROLLER_MASTER); 
-pros::Motor Intake(21, pros::E_MOTOR_GEARSET_06, false, pros::E_MOTOR_ENCODER_DEGREES); 
-pros::Motor LifterFrontLeft(1, pros::E_MOTOR_GEARSET_36, false, pros::E_MOTOR_ENCODER_DEGREES); 
-pros::Motor LifterFrontRight(2, pros::E_MOTOR_GEARSET_36, true, pros::E_MOTOR_ENCODER_DEGREES); 
-okapi::MotorGroup LifterFront({1, 2});   
-pros::ADIDigitalOut Pneumatics1(okapi::ControllerDigital::A, 0);
+/*----------------------------------------------------------------------------*/
+/*                                                                            */
+/*    Module:       main.cpp                                                  */
+/*    Author:       C:\Users\Mridhan Balaji                                   */
+/*    Created:      Wed May 11 2022                                           */
+/*    Description:  V5 project                                                */
+/*                                                                            */
+/*----------------------------------------------------------------------------*/
 
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// ---- END VEXCODE CONFIGURED DEVICES ----
 
+#include "vex.h"
 
+using namespace vex;
 
-
-/**
- * A callback function for LLEMU's center button.
- *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
- */
-void on_center_button() {
-
+int main() {
+  // Initializing Robot Configuration. DO NOT REMOVE!
+  vexcodeInit();
+  
 }
 
-/**
- * Runs initialization code. This occurs as soon as the program is started.
- *
- * All other competition modes are blocked by initialize; it is recommended
- * to keep execution time for this mode under a few seconds.
- */
-void initialize() {
+//Setting PID Values - Proportional, Integral, Derivative
+double kP  = 0.0; 
+double kI = 0.0; 
+double kD = 0.0;
+double turnkP = 0.0;
+double turnkI = 0.0; 
+double turnkD = 0.0; 
 
+//Autonomous Settings
+float desiredValue = 0;
+float computedValue = desiredValue*28.648; 
+float desiredTurnValue = 0; 
+
+float error;
+float prevError = 0; 
+float derivative; 
+float totalError = 0; 
+
+float turnError; 
+float turnPrevError = 0;
+float turnDerivative;
+float turnTotalError = 0; 
+
+bool resetDriveSensors = false; 
+
+
+//EnableDrivePID meant for Loop 
+bool enableDrivePID = true; 
+
+//PID for DriveTrain 
+int drivePID(){
+  if (resetDriveSensors){
+    resetDriveSensors = false; 
+    DriveTrainLeft.setPosition(0, degrees);
+    DriveTrainRight.setPosition(0, degrees); 
+  }
+  while(enableDrivePID){
+    //Getting Position for both of the Motors
+    int leftDriveTrainPosition = DriveTrainLeft.position(degrees);
+    int rightDriveTrainPosition = DriveTrainRight.position(degrees);
+
+    //Lateral Movement PID
+    //Get Average of the Two Motor Groups
+    float averagePosition = (rightDriveTrainPosition + leftDriveTrainPosition)/2; 
+    //Proportional
+    error = averagePosition - computedValue; 
+    //Derivative 
+    derivative = error - prevError;
+    //Integral
+    totalError += error; 
+
+    double lateralMotorPower = error * kP + derivative * kD + totalError * kI; 
+
+    //Turning Movement PID
+    //Get Average of the Two Motor Groups
+    float turnDifference = leftDriveTrainPosition - rightDriveTrainPosition; 
+
+    //Proportional
+    turnError = turnDifference - desiredTurnValue;
+
+    //Derivative 
+    turnDerivative = turnError - turnPrevError; 
+
+    //Integral 
+    turnTotalError += turnError; 
+
+    double turnMotorPower = turnError * turnkP + turnDerivative * turnkD + turnTotalError *turnkI; 
+    //////////////////////////////////////////////////////////////////////
+    DriveTrainLeft.spin(forward, lateralMotorPower + turnMotorPower, voltageUnits::volt); 
+    DriveTrainRight.spin(forward, lateralMotorPower - turnMotorPower, voltageUnits::volt); 
+
+    prevError = error; 
+    turnPrevError = turnError; 
+    vex::task::sleep(20); 
+  }
+  return 1; 
 }
 
-/**
- * Runs while the robot is in the disabled state of Field Management System or
- * the VEX Competition Switch, following either autonomous or opcontrol. When
- * the robot is enabled, this task will exit.
- */
-void disabled() {}
+//Autonomous Task
 
-/**
- * Runs after initialize(), and before autonomous when connected to the Field
- * Management System or the VEX Competition Switch. This is intended for
- * competition-specific initialization routines, such as an autonomous selector
- * on the LCD.
- *
- * This task will exit when the robot is enabled and autonomous or opcontrol
- * starts.
- */
-void competition_initialize() {}
-
-/**
- * Runs the user autonomous code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the autonomous
- * mode. Alternatively, this function may be called in initialize or opcontrol
- * for non-competition testing purposes.
- *
- * If the robot is disabled or communications is lost, the autonomous task
- * will be stopped. Re-enabling the robot will restart the task, not re-start it
- * from where it left off.
- */
-void autonomous() {}
-
-/**
- * Runs the operator control code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the operator
- * control mode.
- *
- * If no competition control is connected, this function will run immediately
- * following initialize().
- *
- * If the robot is disabled or communications is lost, the
- * operator control task will be stopped. Re-enabling the robot will restart the
- * task, not resume it from where it left off.
- */
-void opcontrol() {
-	
+void autonomous (void){
+  //......Insert pain here (auton code)
+  vex::task pid(drivePID); 
 }
+
+//Create the gps sensor, and establish the variable
+public vex::gps::gps(int32_t index, double ox, double oy, distanceUnits units=distanceUnits::mm, double heading_offset=0, turnType dir=turnType::right)
+
+
+
+//set the Origin
+public void vex::gps::setOrigin(double x, double y, distanceUnits units=distanceUnits::mm)
+
+// Even Better, sets the origin, to the starting position, use over that
+public void vex::gps::setOrigin()
+
+
+
+//sETTING THE DESIRED LOCAITION FOR AUTON, OR OTHER TASKS
+public void vex::gps::setLocation(double x, double y, distanceUnits units=distanceUnits::mm, double angle=0, rotationUnits units_r=rotationUnits::deg)
+
+//THIS IS THE SAME THING, BUT WITHOUT UNITS FOR X,Y AND ROTIAITION
+public void vex::gps::setLocation(double x, double y, double angle
+
+//To use to see if the GPS sensors locaition has changed. (Would recomend refreshing and updating the cordinates every 10 miliseconds)
+public void vex::gps::changed(void(*callback)(void))
+
+// X positionof the GPS Sensor
+public double vex::gps::xPosition(distanceUnits units=distanceUnits::mm)
+
+
+//The Y position of the GPS sensor
+public double vex::gps::yPosition(distanceUnits units=distanceUnits::mm)
